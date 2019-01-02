@@ -16,16 +16,34 @@ class Room
   end
 
   def self.by_price(order = "ASC")
-     case order
-     when "ASC"
-       self.all.sort_by{|r| r.price}
-     when "DESC"
-       self.all.sort_by{|r| r.price}.reverse
-     end
+     # for sql
+     sql = <<-SQL
+      SELECT * FROM rooms ORDER BY price #{order}
+     SQL
+
+     rows = DB[:connection].execute(sql)
+     # reify - go from a row [1, "title", date, price, url] to an instance #<Room>
+     #sql
+     self.new_from_rows(rows)
+
+
+     # without sql
+     # case order
+     # when "ASC"
+     #   self.all.sort_by{|r| r.price.to_s}
+     # when "DESC"
+     #   self.all.sort_by{|r| r.price.to_s}.reverse
+     # end
   end
   # Room.by_price("ASC") #=> lowest price room first
   # Room.by_price("DESC") #=> highest price room first
 
+  def self.new_from_rows(rows)
+    # for sql
+    rows.collect do |row|
+      self.new_from_db(row)
+    end
+  end
 
   def self.new_from_db(row)
     self.new.tap do |room|
@@ -49,13 +67,16 @@ class Room
     #2. get all of the rows
     rows = DB[:connection].execute(sql)
     # reify - go from a row [1, "title", date, price, url] to an instance #<Room>
+    #sql
+    self.new_from_rows(rows)
 
+    # without sql
     # 3. for each row get one row
-    rows.collect do |row|
+    #rows.collect do |row|
       # 4. instantiate an object
       #5. because I am using collect these instance(self.new_from_db(row)) are going to be my return value
-      self.new_from_db(row)
-    end
+      #self.new_from_db(row)
+    #end
   end
 
   def insert
